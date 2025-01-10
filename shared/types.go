@@ -10,6 +10,9 @@ const (
 	TypeMessage WsMessageType = "MESSAGE"
 	TypeError   WsMessageType = "ERROR"
 	TypeClose   WsMessageType = "CLOSE"
+	TypeJoin    WsMessageType = "JOIN"
+	TypeLeave   WsMessageType = "LEAVE"
+	TypeTyping  WsMessageType = "TYPING"
 )
 
 // WSMessage represents a WebSocket message structure
@@ -27,4 +30,19 @@ type TextMessage struct {
 // ErrorMessage represents an error message
 type ErrorMessage struct {
 	Error string `json:"error"`
+}
+
+// TypingMessage represents a typing message
+type TypingMessage struct {
+	From string `json:"from"`
+}
+
+// JoinMessage represents a join message
+type JoinMessage struct {
+	From string `json:"from"`
+}
+
+// LeaveMessage represents a leave message
+type LeaveMessage struct {
+	From string `json:"from"`
 }

@@ -37,14 +37,10 @@ func (c *ClientActor) Receive(ctx *actor.Context) {
 		log.Info("ClientActor stopped")
 	case *shared.WSMessage:
 		switch msg.Type {
-		case shared.TypeMessage:
-			if textMsg, ok := msg.Payload.(map[string]interface{}); ok {
-				log.Info("received text message", "text", textMsg["text"], "from", textMsg["from"])
-				// Echo the message back to the client for now
-				err := c.conn.WriteJSON(msg)
-				if err != nil {
-					log.Error("failed to write message", "error", err)
-				}
+		case shared.TypeMessage, shared.TypeTyping:
+			err := c.conn.WriteJSON(msg)
+			if err != nil {
+				log.Error("failed to write message", "error", err)
 			}
 		case shared.TypePing:
 			pongMsg := &shared.WSMessage{Type: shared.TypePong}
@@ -93,7 +89,8 @@ func (r *RoomActor) Receive(ctx *actor.Context) {
 		}
 
 	case *shared.WSMessage:
-		if msg.Type == shared.TypeMessage {
+		// Broadcast both text messages and typing indicators
+		if msg.Type == shared.TypeMessage || msg.Type == shared.TypeTyping {
 			r.mu.RLock()
 			defer r.mu.RUnlock()
 

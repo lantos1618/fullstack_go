@@ -1,21 +1,17 @@
-.PHONY: build_frontend build_backend run clean kill-server
+.PHONY: build watch clean
 
-build_frontend:
-	GOOS=js GOARCH=wasm go build -o dist/main.wasm frontend/main.go
-	cp $$(go env GOROOT)/misc/wasm/wasm_exec.js dist/
-	cp frontend/index.html dist/
 
-build_backend:
-	go build -o tmp/main .
+build-wasm:
+	@echo "Building WASM..."
+	@./scripts/build_wasm.sh
 
-run_backend: build_backend
-	./tmp/main
-
-dev: kill-server
-	air
+watch:
+	@echo "Watching for changes..."
+	@air
 
 clean:
-	rm -rf dist/* tmp/*
+	@echo "Cleaning build artifacts..."
+	@rm -rf dist
+	@rm -f frontend/internal/version.go
 
-kill-server:
-	@lsof -ti :8080 | xargs kill -9 2>/dev/null || true 
+dev: clean build watch 
