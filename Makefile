@@ -1,19 +1,21 @@
-.PHONY: dev build clean
-
-dev:
-	@if ! command -v air > /dev/null; then \
-		go install github.com/air-verse/air@latest; \
-	fi
-	$(shell go env GOPATH)/bin/air
+.PHONY: build_frontend build_backend run clean kill-server
 
 build_frontend:
-	@mkdir -p dist
-	@cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/
-	@cp frontend/index.html dist/
-	@GOOS=js GOARCH=wasm go build -o dist/main.wasm frontend/main.go
+	GOOS=js GOARCH=wasm go build -o dist/main.wasm frontend/main.go
+	cp $$(go env GOROOT)/misc/wasm/wasm_exec.js dist/
+	cp frontend/index.html dist/
 
 build_backend:
-	@go build -o tmp/main .
+	go build -o tmp/main .
+
+run_backend: build_backend
+	./tmp/main
+
+dev: kill-server
+	air
 
 clean:
-	@rm -rf tmp dist 
+	rm -rf dist/* tmp/*
+
+kill-server:
+	@lsof -ti :8080 | xargs kill -9 2>/dev/null || true 

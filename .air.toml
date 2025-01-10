@@ -2,8 +2,27 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "make build_frontend && go run main.go"
-bin = ""
-include_ext = ["go", "html", "js"]
-exclude_dir = ["dist", "tmp"]
-delay = 1000  # ms 
+cmd = "make build_frontend && go build -o ./tmp/main ."
+bin = "./tmp/main"
+full_bin = "./tmp/main"
+include_ext = ["go", "tpl", "tmpl", "html"]
+exclude_dir = ["dist", "tmp", "vendor"]
+include_dir = []
+exclude_file = []
+delay = 1000
+stop_on_error = true
+log = "air_errors.log"
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = true
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+clean_on_exit = true 

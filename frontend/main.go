@@ -56,6 +56,7 @@ func (a *App) connectWS() {
 }
 
 func (a *App) sendMessage(e *vecty.Event) {
+	js.Global().Call("alert", "Hello, World!")
 	if a.input == "" {
 		return
 	}
@@ -87,7 +88,7 @@ func (a *App) renderMessageList() vecty.ComponentOrHTML {
 	if len(a.messages) == 0 {
 		return elem.Paragraph(
 			vecty.Markup(
-				vecty.Class("text-gray-500 text-center"),
+				vecty.Class("text-gray-500", "text-center"),
 			),
 			vecty.Text("No messages yet"),
 		)
@@ -116,31 +117,31 @@ func (a *App) renderMessageList() vecty.ComponentOrHTML {
 func (a *App) Render() vecty.ComponentOrHTML {
 	return elem.Body(
 		vecty.Markup(
-			vecty.Class("min-h-screen bg-gray-100"),
+			vecty.Class("min-h-screen", "bg-gray-100"),
 		),
 		elem.Div(
 			vecty.Markup(
-				vecty.Class("container mx-auto p-4"),
+				vecty.Class("container", "mx-auto", "p-4"),
 			),
 			elem.Heading1(
 				vecty.Markup(
-					vecty.Class("text-2xl font-bold mb-4"),
+					vecty.Class("text-2xl", "font-bold", "mb-4"),
 				),
 				vecty.Text("Chat Application"),
 			),
 			elem.Div(
 				vecty.Markup(
-					vecty.Class("bg-white rounded-lg shadow-md p-4 mb-4 h-96 overflow-y-auto"),
+					vecty.Class("bg-white", "rounded-lg", "shadow-md", "p-4", "mb-4", "h-96", "overflow-y-auto"),
 				),
 				a.renderMessageList(),
 			),
 			elem.Div(
 				vecty.Markup(
-					vecty.Class("flex gap-2"),
+					vecty.Class("flex", "gap-2"),
 				),
 				elem.Input(
 					vecty.Markup(
-						vecty.Class("flex-1 p-2 border rounded"),
+						vecty.Class("flex-1", "p-2", "border", "rounded"),
 						event.Input(a.onInput),
 						vecty.Property("type", "text"),
 						vecty.Property("value", a.input),
@@ -149,7 +150,7 @@ func (a *App) Render() vecty.ComponentOrHTML {
 				),
 				elem.Button(
 					vecty.Markup(
-						vecty.Class("bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"),
+						vecty.Class("bg-blue-500", "text-white", "px-4", "py-2", "rounded", "hover:bg-blue-600"),
 						event.Click(a.sendMessage),
 					),
 					vecty.Text("Send"),
