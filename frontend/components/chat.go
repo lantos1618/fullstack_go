@@ -81,14 +81,14 @@ func (c *Chat) connectWS() {
 							Username: typingMsg.From,
 							IsTyping: true,
 						})
-						// Clear typing indicator after 3 seconds
+						// Clear typing indicator after 1 second
 						js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 							dispatcher.Dispatch(&actions.SetTyping{
 								Username: typingMsg.From,
 								IsTyping: false,
 							})
 							return nil
-						}), 3000)
+						}), 1000)
 					}
 				}
 			}
