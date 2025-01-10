@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-chat/shared"
 	"net/http"
+	"sync"
 
 	"github.com/anthdm/hollywood/actor"
 	"github.com/charmbracelet/log"
@@ -20,6 +21,7 @@ type ActorType string
 
 const (
 	ActorTypeClient ActorType = "client"
+	ActorTypeRoom   ActorType = "room"
 )
 
 type ClientActor struct {
@@ -60,12 +62,79 @@ func newClientActor(conn *websocket.Conn) actor.Producer {
 	}
 }
 
-func main() {
+type RoomActor struct {
+	clients map[string]*actor.PID
+	mu      sync.RWMutex
+}
 
+func (r *RoomActor) Receive(ctx *actor.Context) {
+	switch msg := ctx.Message().(type) {
+	case *actor.Started:
+		log.Info("RoomActor started")
+
+	case *actor.Stopped:
+		log.Info("RoomActor stopped")
+
+	case *ClientJoined:
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		if r.clients == nil {
+			r.clients = make(map[string]*actor.PID)
+		}
+		r.clients[msg.ClientPID.String()] = msg.ClientPID
+		log.Info("client joined room", "pid", msg.ClientPID.String(), "total_clients", len(r.clients))
+
+	case *ClientLeft:
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		if r.clients != nil {
+			delete(r.clients, msg.ClientPID.String())
+			log.Info("client left room", "pid", msg.ClientPID.String(), "total_clients", len(r.clients))
+		}
+
+	case *shared.WSMessage:
+		if msg.Type == shared.TypeMessage {
+			r.mu.RLock()
+			defer r.mu.RUnlock()
+
+			if r.clients == nil {
+				log.Error("clients map is nil")
+				return
+			}
+
+			for pid, client := range r.clients {
+				ctx.Engine().Send(client, msg)
+				log.Debug("sent message to client", "pid", pid)
+			}
+		}
+	}
+}
+
+type ClientJoined struct {
+	ClientPID *actor.PID
+}
+
+type ClientLeft struct {
+	ClientPID *actor.PID
+}
+
+func newRoomActor() actor.Producer {
+	return func() actor.Receiver {
+		return &RoomActor{
+			clients: make(map[string]*actor.PID),
+		}
+	}
+}
+
+func main() {
 	engine, err := actor.NewEngine(actor.NewEngineConfig())
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Spawn the room actor
+	roomPID := engine.Spawn(newRoomActor(), string(ActorTypeRoom))
+	log.Info("Room actor started", "pid", roomPID)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -75,10 +144,15 @@ func main() {
 
 		pid := engine.Spawn(newClientActor(conn), string(ActorTypeClient))
 
+		// Notify room about new client
+		engine.Send(roomPID, &ClientJoined{ClientPID: pid})
+
 		log.Info(fmt.Sprintf("Client connected: %s", pid))
 
 		defer func() {
 			log.Info(fmt.Sprintf("Closing connection for %s", pid))
+			// Notify room about client leaving
+			engine.Send(roomPID, &ClientLeft{ClientPID: pid})
 			engine.Send(pid, shared.TypeClose)
 			engine.Poison(pid)
 			conn.Close()
@@ -93,7 +167,8 @@ func main() {
 				break
 			}
 
-			engine.Send(pid, &msg)
+			// Send message to room instead of directly to client
+			engine.Send(roomPID, &msg)
 		}
 	})
 
