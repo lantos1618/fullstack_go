@@ -1,20 +1,21 @@
 package shared
 
-// MessageType represents different types of WebSocket messages
-type MessageType string
+// WsMessageType represents different types of WebSocket messages
+type WsMessageType string
 
 const (
 	// Message types
-	TypePing    MessageType = "PING"
-	TypePong    MessageType = "PONG"
-	TypeMessage MessageType = "MESSAGE"
-	TypeError   MessageType = "ERROR"
+	TypePing    WsMessageType = "PING"
+	TypePong    WsMessageType = "PONG"
+	TypeMessage WsMessageType = "MESSAGE"
+	TypeError   WsMessageType = "ERROR"
+	TypeClose   WsMessageType = "CLOSE"
 )
 
 // WSMessage represents a WebSocket message structure
 type WSMessage struct {
-	Type    MessageType `json:"type"`
-	Payload any         `json:"payload"`
+	Type    WsMessageType `json:"type"`
+	Payload any           `json:"payload"`
 }
 
 // TextMessage represents a simple text message

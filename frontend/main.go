@@ -56,7 +56,6 @@ func (a *App) connectWS() {
 }
 
 func (a *App) sendMessage(e *vecty.Event) {
-	js.Global().Call("alert", "Hello, World!")
 	if a.input == "" {
 		return
 	}
