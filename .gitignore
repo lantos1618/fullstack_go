@@ -27,3 +27,7 @@ debug.test
 
 # Dependencies
 /vendor/ 
+
+# Build
+dist/
+tmp/

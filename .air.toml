@@ -2,25 +2,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/main ."
-bin = "./tmp/main"
-full_bin = "./tmp/main"
-include_ext = ["go", "tpl", "tmpl", "html"]
-exclude_dir = ["frontend/node_modules", "tmp", "vendor"]
-include_dir = []
-exclude_file = []
-delay = 1000
-stop_on_error = true
-log = "air_errors.log"
-
-[log]
-time = true
-
-[color]
-main = "yellow"
-watcher = "cyan"
-build = "green"
-runner = "magenta"
-
-[misc]
-clean_on_exit = true 
+cmd = "make build_frontend && go run main.go"
+bin = ""
+include_ext = ["go", "html", "js"]
+exclude_dir = ["dist", "tmp"]
+delay = 1000  # ms 

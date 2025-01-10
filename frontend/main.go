@@ -25,6 +25,7 @@ type App struct {
 func NewApp() *App {
 	app := &App{}
 	app.connectWS()
+	app.Render()
 	return app
 }
 
@@ -80,7 +81,6 @@ func (a *App) sendMessage(e *vecty.Event) {
 
 func (a *App) onInput(e *vecty.Event) {
 	a.input = e.Target.Get("value").String()
-	vecty.Rerender(a)
 }
 
 func (a *App) renderMessageList() vecty.ComponentOrHTML {

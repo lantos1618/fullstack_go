@@ -6,13 +6,14 @@ dev:
 	fi
 	$(shell go env GOPATH)/bin/air
 
-build:
-	@mkdir -p frontend
-	@cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" frontend/
-	@GOOS=js GOARCH=wasm go build -o frontend/main.wasm frontend/main.go
+build_frontend:
+	@mkdir -p dist
+	@cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/
+	@cp frontend/index.html dist/
+	@GOOS=js GOARCH=wasm go build -o dist/main.wasm frontend/main.go
+
+build_backend:
 	@go build -o tmp/main .
 
 clean:
-	@rm -rf tmp
-	@rm -f frontend/main.wasm
-	@rm -f frontend/wasm_exec.js 
+	@rm -rf tmp dist 
