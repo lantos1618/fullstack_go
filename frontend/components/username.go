@@ -41,18 +41,41 @@ func (u *UsernameForm) onSubmit(e *vecty.Event) {
 func (u *UsernameForm) Render() vecty.ComponentOrHTML {
 	return elem.Form(
 		vecty.Markup(
-			vecty.Class("flex", "flex-col", "gap-4", "p-8", "bg-white", "rounded-lg", "shadow-md", "max-w-md", "mx-auto", "mt-20"),
+			vecty.Class(
+				"flex", "flex-col", "gap-6",
+				"p-8",
+				"bg-white", "dark:bg-gray-800",
+				"rounded-lg", "shadow-lg",
+				"max-w-md", "mx-auto", "mt-20",
+				"transition-colors", "duration-200",
+				"border", "border-gray-200", "dark:border-gray-700",
+			),
 			event.Submit(u.onSubmit).PreventDefault(),
 		),
 		elem.Heading2(
 			vecty.Markup(
-				vecty.Class("text-xl", "font-bold", "text-center"),
+				vecty.Class(
+					"text-2xl",
+					"font-bold",
+					"text-center",
+					"text-gray-900", "dark:text-white",
+				),
 			),
 			vecty.Text("Enter Your Username"),
 		),
 		elem.Input(
 			vecty.Markup(
-				vecty.Class("p-2", "border", "rounded"),
+				vecty.Class(
+					"p-3",
+					"border", "border-gray-300", "dark:border-gray-600",
+					"rounded-lg",
+					"bg-white", "dark:bg-gray-700",
+					"text-gray-900", "dark:text-white",
+					"placeholder-gray-500", "dark:placeholder-gray-400",
+					"focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+					"focus:border-transparent",
+					"transition-colors", "duration-200",
+				),
 				event.Input(u.onInput),
 				vecty.Property("type", "text"),
 				vecty.Property("value", u.input),
@@ -62,7 +85,16 @@ func (u *UsernameForm) Render() vecty.ComponentOrHTML {
 		),
 		elem.Button(
 			vecty.Markup(
-				vecty.Class("bg-blue-500", "text-white", "px-4", "py-2", "rounded", "hover:bg-blue-600"),
+				vecty.Class(
+					"px-6", "py-3",
+					"bg-blue-500", "dark:bg-blue-600",
+					"hover:bg-blue-600", "dark:hover:bg-blue-700",
+					"text-white",
+					"font-medium",
+					"rounded-lg",
+					"transition-colors", "duration-200",
+					"focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+				),
 				vecty.Property("type", "submit"),
 			),
 			vecty.Text("Join Chat"),

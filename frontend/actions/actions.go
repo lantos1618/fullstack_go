@@ -16,3 +16,6 @@ type SetTyping struct {
 	Username string
 	IsTyping bool
 }
+
+// ToggleDarkMode is an action that toggles dark mode
+type ToggleDarkMode struct{}

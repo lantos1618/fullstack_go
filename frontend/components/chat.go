@@ -28,25 +28,26 @@ type Chat struct {
 
 // Mount implements the vecty.Mounter interface
 func (c *Chat) Mount() {
-	log.Printf("Chat component mounted")
+	log.Printf("🚀 Chat component mounted")
 	store.Listeners.Add(c, func() {
-		log.Printf("Chat component rerendering due to store change")
+		log.Printf("🔄 Chat component rerendering due to store change")
 		vecty.Rerender(c)
 	})
 }
 
 // Unmount implements the vecty.Unmounter interface
 func (c *Chat) Unmount() {
-	log.Printf("Chat component unmounted")
+	log.Printf("👋 Chat component unmounted")
 	store.Listeners.Remove(c)
+	chatInstance = nil // Reset the singleton instance
 }
 
 var chatInstance *Chat
 
 // NewChat creates a new chat component
 func NewChat() vecty.ComponentOrHTML {
-	log.Printf("Creating new chat component")
 	if chatInstance == nil {
+		log.Printf("📱 Creating new chat component")
 		chatInstance = &Chat{}
 		chatInstance.connectWS()
 	}
@@ -136,11 +137,28 @@ func (c *Chat) onSend(e *vecty.Event) {
 	vecty.Rerender(c)
 }
 
+func (c *Chat) onKeyDown(e *vecty.Event) {
+	// Check if the pressed key is Enter
+	if e.Get("key").String() == "Enter" {
+		// Check if Shift is held down
+		if e.Get("shiftKey").Bool() {
+			// Add newline character
+			c.input += "\n"
+			vecty.Rerender(c)
+		} else {
+			// Prevent default behavior (newline)
+			e.Call("preventDefault")
+			// Submit the message
+			c.onSend(e)
+		}
+	}
+}
+
 func (c *Chat) renderMessageList() vecty.ComponentOrHTML {
 	if len(store.Messages) == 0 {
 		return elem.Paragraph(
 			vecty.Markup(
-				vecty.Class("text-gray-500", "text-center"),
+				vecty.Class("text-gray-500", "dark:text-gray-400", "text-center", "italic"),
 			),
 			vecty.Text("No messages yet"),
 		)
@@ -151,11 +169,11 @@ func (c *Chat) renderMessageList() vecty.ComponentOrHTML {
 		messageElements = append(messageElements,
 			elem.Div(
 				vecty.Markup(
-					vecty.Class("mb-2"),
+					vecty.Class("mb-4", "text-gray-800", "dark:text-gray-200"),
 				),
 				elem.Span(
 					vecty.Markup(
-						vecty.Class("font-bold"),
+						vecty.Class("font-bold", "text-blue-600", "dark:text-blue-400", "mr-2"),
 					),
 					vecty.Text(msg.From+": "),
 				),
@@ -185,7 +203,7 @@ func (c *Chat) renderTypingIndicators() vecty.ComponentOrHTML {
 
 	return elem.Paragraph(
 		vecty.Markup(
-			vecty.Class("text-gray-500", "italic", "text-sm", "mt-2"),
+			vecty.Class("text-gray-500", "dark:text-gray-400", "italic", "text-sm", "mt-2"),
 		),
 		vecty.Text(typingText),
 	)
@@ -193,32 +211,43 @@ func (c *Chat) renderTypingIndicators() vecty.ComponentOrHTML {
 
 // Render implements the vecty.Component interface
 func (c *Chat) Render() vecty.ComponentOrHTML {
-	log.Printf("Chat.Render called")
+	log.Printf("🎨 Chat component rendering")
 	result := elem.Div(
 		vecty.Markup(
-			vecty.Class("container", "mx-auto", "p-4"),
-		),
-		elem.Heading1(
-			vecty.Markup(
-				vecty.Class("text-2xl", "font-bold", "mb-4"),
-			),
-			vecty.Text("Chat Application"),
+			vecty.Class("container", "mx-auto", "p-4", "max-w-4xl"),
 		),
 		elem.Div(
 			vecty.Markup(
-				vecty.Class("bg-white", "rounded-lg", "shadow-md", "p-4", "mb-4", "h-96", "overflow-y-auto"),
+				vecty.Class(
+					"bg-white", "dark:bg-gray-800",
+					"rounded-lg", "shadow-lg",
+					"p-6", "mb-4", "h-96", "overflow-y-auto",
+					"transition-colors", "duration-200",
+					"border", "border-gray-200", "dark:border-gray-700",
+				),
 			),
 			c.renderMessageList(),
 			c.renderTypingIndicators(),
 		),
 		elem.Div(
 			vecty.Markup(
-				vecty.Class("flex", "gap-2"),
+				vecty.Class("flex", "gap-3"),
 			),
 			elem.Input(
 				vecty.Markup(
-					vecty.Class("flex-1", "p-2", "border", "rounded"),
+					vecty.Class(
+						"flex-1", "p-3",
+						"border", "border-gray-300", "dark:border-gray-600",
+						"rounded-lg",
+						"bg-white", "dark:bg-gray-700",
+						"text-gray-900", "dark:text-white",
+						"placeholder-gray-500", "dark:placeholder-gray-400",
+						"focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+						"focus:border-transparent",
+						"transition-colors", "duration-200",
+					),
 					event.Input(c.onInput),
+					event.KeyDown(c.onKeyDown),
 					vecty.Property("type", "text"),
 					vecty.Property("value", c.input),
 					vecty.Property("placeholder", "Type a message..."),
@@ -226,13 +255,22 @@ func (c *Chat) Render() vecty.ComponentOrHTML {
 			),
 			elem.Button(
 				vecty.Markup(
-					vecty.Class("bg-blue-500", "text-white", "px-4", "py-2", "rounded", "hover:bg-blue-600"),
+					vecty.Class(
+						"px-6", "py-3",
+						"bg-blue-500", "dark:bg-blue-600",
+						"hover:bg-blue-600", "dark:hover:bg-blue-700",
+						"text-white",
+						"font-medium",
+						"rounded-lg",
+						"transition-colors", "duration-200",
+						"focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+					),
 					event.Click(c.onSend),
 				),
 				vecty.Text("Send"),
 			),
 		),
 	)
-	log.Printf("Chat.Render completed")
+	log.Printf("✅ Chat component render completed")
 	return result
 }

@@ -6,6 +6,21 @@
     <script src="wasm_exec.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions for dark mode */
+        * {
+            transition-property: color, background-color, border-color;
+            transition-duration: 200ms;
+        }
+    </style>
+    <script>
         if (!WebAssembly.instantiateStreaming) {
             WebAssembly.instantiateStreaming = async (resp, importObject) => {
                 const source = await (await resp).arrayBuffer();
