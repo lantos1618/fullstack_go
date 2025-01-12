@@ -38,7 +38,8 @@ type ErrorMessage struct {
 
 // TypingMessage is the payload for TypeTyping
 type TypingMessage struct {
-	From string `json:"from"` // Username of the person typing
+	From     string `json:"from"`      // Username of the person typing
+	IsTyping bool   `json:"is_typing"` // Whether the user is typing
 }
 
 // JoinMessage is the payload for TypeJoin

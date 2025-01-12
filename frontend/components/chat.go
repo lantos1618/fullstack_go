@@ -11,7 +11,7 @@ import (
 	"go-chat/frontend/store"
 	"go-chat/frontend/store/actions"
 	"go-chat/frontend/store/dispatcher"
-	"go-chat/shared/api"
+	"go-chat/shared/ws"
 
 	"github.com/hexops/vecty"
 	"github.com/hexops/vecty/elem"
@@ -58,56 +58,74 @@ func NewChat() vecty.ComponentOrHTML {
 func (c *Chat) connectWS() {
 	ws := js.Global().Get("WebSocket").New("ws://" + js.Global().Get("location").Get("host").String() + "/ws")
 
-	ws.Set("onmessage", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		data := args[0].Get("data").String()
-		var wsMsg api.WSMessage
-		if err := json.Unmarshal([]byte(data), &wsMsg); err != nil {
-			log.Printf("error unmarshaling message: %v", err)
-			return nil
-		}
-
-		switch wsMsg.Type {
-		case api.WSTypeMessage:
-			var chatMsg api.WSChatMessage
-			if payloadBytes, err := json.Marshal(wsMsg.Payload); err == nil {
-				if err := json.Unmarshal(payloadBytes, &chatMsg); err == nil {
-					dispatcher.Dispatch(&actions.AddMessage{
-						Text: chatMsg.Text,
-						From: chatMsg.From,
-					})
-				}
-			}
-		case api.WSTypeTyping:
-			var typingMsg api.WSTypingMessage
-			if payloadBytes, err := json.Marshal(wsMsg.Payload); err == nil {
-				if err := json.Unmarshal(payloadBytes, &typingMsg); err == nil {
-					if typingMsg.From != store.Username {
-						dispatcher.Dispatch(&actions.SetTyping{
-							Username: typingMsg.From,
-							IsTyping: typingMsg.IsTyping,
-						})
-						// Clear typing indicator after 1 second
-						js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-							dispatcher.Dispatch(&actions.SetTyping{
-								Username: typingMsg.From,
-								IsTyping: false,
-							})
-							return nil
-						}), 1000)
-					}
-				}
-			}
-		}
+	ws.Set("onopen", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		log.Printf("WebSocket connection established")
 		return nil
 	}))
 
-	ws.Set("onopen", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		log.Printf("WebSocket connected")
+	ws.Set("onerror", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		log.Printf("WebSocket error occurred")
 		return nil
 	}))
 
 	ws.Set("onclose", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		log.Printf("WebSocket disconnected")
+		log.Printf("WebSocket connection closed, attempting to reconnect in 3 seconds...")
+		js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+			c.connectWS()
+			return nil
+		}), 3000)
+		return nil
+	}))
+
+	ws.Set("onmessage", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		data := args[0].Get("data").String()
+		var msg map[string]interface{}
+		if err := json.Unmarshal([]byte(data), &msg); err != nil {
+			log.Printf("error unmarshaling message: %v", err)
+			return nil
+		}
+
+		msgType, ok := msg["type"].(string)
+		if !ok {
+			log.Printf("invalid message type")
+			return nil
+		}
+
+		log.Printf("Received message of type: %s", msgType)
+
+		switch msgType {
+		case "MESSAGE":
+			if payload, ok := msg["payload"].(map[string]interface{}); ok {
+				text, _ := payload["text"].(string)
+				from, _ := payload["from"].(string)
+				if text != "" && from != "" {
+					log.Printf("Received chat message from %s: %s", from, text)
+					dispatcher.Dispatch(&actions.AddMessage{
+						Text: text,
+						From: from,
+					})
+				}
+			}
+		case "TYPING":
+			if payload, ok := msg["payload"].(map[string]interface{}); ok {
+				from, _ := payload["from"].(string)
+				isTyping, _ := payload["is_typing"].(bool)
+				if from != "" && from != store.Username {
+					dispatcher.Dispatch(&actions.SetTyping{
+						Username: from,
+						IsTyping: isTyping,
+					})
+					// Clear typing indicator after 1 second
+					js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+						dispatcher.Dispatch(&actions.SetTyping{
+							Username: from,
+							IsTyping: false,
+						})
+						return nil
+					}), 1000)
+				}
+			}
+		}
 		return nil
 	}))
 
@@ -119,10 +137,11 @@ func (c *Chat) onInput(e *vecty.Event) {
 	vecty.Rerender(c)
 
 	// Send typing notification
-	msg := api.WSMessage{
-		Type: api.WSTypeTyping,
-		Payload: api.WSTypingMessage{
-			From: store.Username,
+	msg := map[string]interface{}{
+		"type": "TYPING",
+		"payload": map[string]interface{}{
+			"from":      store.Username,
+			"is_typing": true,
 		},
 	}
 	if data, err := json.Marshal(msg); err == nil {
@@ -135,16 +154,17 @@ func (c *Chat) onSend(e *vecty.Event) {
 		return
 	}
 
-	msg := api.WSMessage{
-		Type: api.WSTypeMessage,
-		Payload: api.WSChatMessage{
-			Text: c.input,
-			From: store.Username,
+	msg := map[string]interface{}{
+		"type": "MESSAGE",
+		"payload": map[string]interface{}{
+			"text": c.input,
+			"from": store.Username,
 		},
 	}
 
 	if data, err := json.Marshal(msg); err == nil {
 		c.ws.Call("send", string(data))
+		log.Printf("Sent message: %s", c.input)
 	}
 
 	c.input = ""
@@ -287,4 +307,27 @@ func (c *Chat) Render() vecty.ComponentOrHTML {
 	)
 
 	return result
+}
+
+// SendMessage sends a chat message through the WebSocket connection
+func (c *Chat) SendMessage(text string) {
+	if c.ws.Get("readyState").Int() != 1 { // 1 = OPEN
+		log.Printf("Cannot send message: WebSocket is not connected")
+		return
+	}
+
+	msg := ws.Message{
+		Type: ws.TypeMessage,
+		Payload: ws.TextMessage{
+			Text: text,
+			From: store.Username,
+		},
+	}
+
+	if msgBytes, err := json.Marshal(msg); err == nil {
+		c.ws.Call("send", string(msgBytes))
+		log.Printf("Sent message: %s", text)
+	} else {
+		log.Printf("error marshaling message: %v", err)
+	}
 }

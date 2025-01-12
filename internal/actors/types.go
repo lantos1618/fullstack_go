@@ -12,12 +12,14 @@ const (
 	TypeRoom   Type = "room"
 )
 
-// ClientJoined represents a client joining message
+// ClientJoined is sent when a new client joins the room
 type ClientJoined struct {
 	ClientPID *actor.PID
+	Username  string
 }
 
-// ClientLeft represents a client leaving message
+// ClientLeft is sent when a client leaves the room
 type ClientLeft struct {
 	ClientPID *actor.PID
+	Username  string
 }
