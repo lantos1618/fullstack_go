@@ -1,8 +1,11 @@
+//go:build wasm
+// +build wasm
+
 package components
 
 import (
 	"go-chat/frontend/store/actions"
-	"go-chat/shared"
+	"go-chat/shared/api"
 	"log"
 	"time"
 
@@ -13,7 +16,7 @@ import (
 // HealthStatus is a component that displays the server health status
 type HealthStatus struct {
 	vecty.Core
-	health *shared.HealthResponse
+	health *api.HealthResponse
 }
 
 // Mount implements the vecty.Mounter interface

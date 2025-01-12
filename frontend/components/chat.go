@@ -8,14 +8,15 @@ import (
 	"log"
 	"syscall/js"
 
-	"go-chat/frontend/actions"
-	"go-chat/frontend/dispatcher"
 	"go-chat/frontend/store"
-	"go-chat/shared"
+	"go-chat/frontend/store/actions"
+	"go-chat/frontend/store/dispatcher"
+	"go-chat/shared/api"
 
 	"github.com/hexops/vecty"
 	"github.com/hexops/vecty/elem"
 	"github.com/hexops/vecty/event"
+	"github.com/hexops/vecty/prop"
 )
 
 // Chat is the main chat component
@@ -59,28 +60,31 @@ func (c *Chat) connectWS() {
 
 	ws.Set("onmessage", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		data := args[0].Get("data").String()
-		var wsMsg shared.WSMessage
+		var wsMsg api.WSMessage
 		if err := json.Unmarshal([]byte(data), &wsMsg); err != nil {
 			log.Printf("error unmarshaling message: %v", err)
 			return nil
 		}
 
 		switch wsMsg.Type {
-		case shared.TypeMessage:
-			if textMsg, ok := wsMsg.Payload.(map[string]interface{}); ok {
-				dispatcher.Dispatch(&actions.AddMessage{
-					Text: textMsg["text"].(string),
-					From: textMsg["from"].(string),
-				})
+		case api.WSTypeMessage:
+			var chatMsg api.WSChatMessage
+			if payloadBytes, err := json.Marshal(wsMsg.Payload); err == nil {
+				if err := json.Unmarshal(payloadBytes, &chatMsg); err == nil {
+					dispatcher.Dispatch(&actions.AddMessage{
+						Text: chatMsg.Text,
+						From: chatMsg.From,
+					})
+				}
 			}
-		case shared.TypeTyping:
-			var typingMsg shared.TypingMessage
+		case api.WSTypeTyping:
+			var typingMsg api.WSTypingMessage
 			if payloadBytes, err := json.Marshal(wsMsg.Payload); err == nil {
 				if err := json.Unmarshal(payloadBytes, &typingMsg); err == nil {
 					if typingMsg.From != store.Username {
 						dispatcher.Dispatch(&actions.SetTyping{
 							Username: typingMsg.From,
-							IsTyping: true,
+							IsTyping: typingMsg.IsTyping,
 						})
 						// Clear typing indicator after 1 second
 						js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -97,6 +101,16 @@ func (c *Chat) connectWS() {
 		return nil
 	}))
 
+	ws.Set("onopen", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		log.Printf("WebSocket connected")
+		return nil
+	}))
+
+	ws.Set("onclose", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		log.Printf("WebSocket disconnected")
+		return nil
+	}))
+
 	c.ws = ws
 }
 
@@ -105,9 +119,9 @@ func (c *Chat) onInput(e *vecty.Event) {
 	vecty.Rerender(c)
 
 	// Send typing notification
-	msg := shared.WSMessage{
-		Type: shared.TypeTyping,
-		Payload: shared.TypingMessage{
+	msg := api.WSMessage{
+		Type: api.WSTypeTyping,
+		Payload: api.WSTypingMessage{
 			From: store.Username,
 		},
 	}
@@ -121,9 +135,9 @@ func (c *Chat) onSend(e *vecty.Event) {
 		return
 	}
 
-	msg := shared.WSMessage{
-		Type: shared.TypeMessage,
-		Payload: shared.TextMessage{
+	msg := api.WSMessage{
+		Type: api.WSTypeMessage,
+		Payload: api.WSChatMessage{
 			Text: c.input,
 			From: store.Username,
 		},
@@ -248,9 +262,8 @@ func (c *Chat) Render() vecty.ComponentOrHTML {
 					),
 					event.Input(c.onInput),
 					event.KeyDown(c.onKeyDown),
-					vecty.Property("type", "text"),
-					vecty.Property("value", c.input),
-					vecty.Property("placeholder", "Type a message..."),
+					prop.Value(c.input),
+					prop.Placeholder("Type a message..."),
 				),
 			),
 			elem.Button(
@@ -258,19 +271,20 @@ func (c *Chat) Render() vecty.ComponentOrHTML {
 					vecty.Class(
 						"px-6", "py-3",
 						"bg-blue-500", "dark:bg-blue-600",
-						"hover:bg-blue-600", "dark:hover:bg-blue-700",
 						"text-white",
-						"font-medium",
 						"rounded-lg",
+						"hover:bg-blue-600", "dark:hover:bg-blue-700",
+						"focus:outline-none", "focus:ring-2", "focus:ring-blue-500",
 						"transition-colors", "duration-200",
-						"focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+						"disabled:opacity-50",
 					),
 					event.Click(c.onSend),
+					prop.Disabled(c.input == ""),
 				),
 				vecty.Text("Send"),
 			),
 		),
 	)
-	log.Printf("✅ Chat component render completed")
+
 	return result
 }

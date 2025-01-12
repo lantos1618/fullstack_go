@@ -4,9 +4,9 @@
 package components
 
 import (
-	"go-chat/frontend/actions"
-	"go-chat/frontend/dispatcher"
 	"go-chat/frontend/store"
+	"go-chat/frontend/store/actions"
+	"go-chat/frontend/store/dispatcher"
 	"log"
 
 	"github.com/hexops/vecty"

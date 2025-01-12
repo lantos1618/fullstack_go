@@ -1,4 +1,4 @@
 package internal
 
 // BuildHash is automatically generated during build
-const BuildHash = "ea474799"
+const BuildHash = "21c4b1e2"

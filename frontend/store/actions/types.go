@@ -1,3 +1,6 @@
+//go:build wasm
+// +build wasm
+
 package actions
 
 // SetUsername is an action that sets the current user's username

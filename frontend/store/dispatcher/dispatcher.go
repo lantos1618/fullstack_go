@@ -1,3 +1,6 @@
+//go:build wasm
+// +build wasm
+
 package dispatcher
 
 // ID is a unique identifier for registered callbacks

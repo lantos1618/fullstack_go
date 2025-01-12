@@ -4,9 +4,9 @@
 package components
 
 import (
-	"go-chat/frontend/actions"
-	"go-chat/frontend/dispatcher"
-
+	"go-chat/frontend/store"
+	"go-chat/frontend/store/actions"
+	"go-chat/frontend/store/dispatcher"
 	"log"
 
 	"github.com/hexops/vecty"
@@ -39,6 +39,10 @@ func (u *UsernameForm) onSubmit(e *vecty.Event) {
 
 // Render implements the vecty.Component interface
 func (u *UsernameForm) Render() vecty.ComponentOrHTML {
+	if store.Username != "" {
+		return nil // Don't render if username is already set
+	}
+
 	return elem.Form(
 		vecty.Markup(
 			vecty.Class(
@@ -52,16 +56,17 @@ func (u *UsernameForm) Render() vecty.ComponentOrHTML {
 			),
 			event.Submit(u.onSubmit).PreventDefault(),
 		),
-		elem.Heading2(
+		elem.Heading1(
 			vecty.Markup(
-				vecty.Class(
-					"text-2xl",
-					"font-bold",
-					"text-center",
-					"text-gray-900", "dark:text-white",
-				),
+				vecty.Class("text-2xl", "font-bold", "text-center", "text-gray-900", "dark:text-white"),
 			),
-			vecty.Text("Enter Your Username"),
+			vecty.Text("Welcome to Chat"),
+		),
+		elem.Paragraph(
+			vecty.Markup(
+				vecty.Class("text-gray-600", "dark:text-gray-400", "text-center"),
+			),
+			vecty.Text("Please enter your username to continue"),
 		),
 		elem.Input(
 			vecty.Markup(
@@ -77,9 +82,8 @@ func (u *UsernameForm) Render() vecty.ComponentOrHTML {
 					"transition-colors", "duration-200",
 				),
 				event.Input(u.onInput),
-				vecty.Property("type", "text"),
 				vecty.Property("value", u.input),
-				vecty.Property("placeholder", "Your username..."),
+				vecty.Property("placeholder", "Enter your username"),
 				vecty.Property("required", true),
 			),
 		),
@@ -88,14 +92,15 @@ func (u *UsernameForm) Render() vecty.ComponentOrHTML {
 				vecty.Class(
 					"px-6", "py-3",
 					"bg-blue-500", "dark:bg-blue-600",
-					"hover:bg-blue-600", "dark:hover:bg-blue-700",
 					"text-white",
-					"font-medium",
 					"rounded-lg",
+					"hover:bg-blue-600", "dark:hover:bg-blue-700",
+					"focus:outline-none", "focus:ring-2", "focus:ring-blue-500",
 					"transition-colors", "duration-200",
-					"focus:outline-none", "focus:ring-2", "focus:ring-blue-500", "dark:focus:ring-blue-400",
+					"disabled:opacity-50",
 				),
 				vecty.Property("type", "submit"),
+				vecty.Property("disabled", u.input == ""),
 			),
 			vecty.Text("Join Chat"),
 		),

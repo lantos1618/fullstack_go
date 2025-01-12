@@ -4,16 +4,16 @@
 package store
 
 import (
-	"go-chat/frontend/actions"
-	"go-chat/frontend/dispatcher"
-	"go-chat/shared"
+	"go-chat/frontend/store/actions"
+	"go-chat/frontend/store/dispatcher"
+	"go-chat/shared/api"
 	"log"
 	"syscall/js"
 )
 
 var (
 	// Messages represents all chat messages
-	Messages []shared.TextMessage
+	Messages []api.WSChatMessage
 
 	// Username represents the current user's username
 	Username string
@@ -48,25 +48,22 @@ func NewListenerRegistry() *ListenerRegistry {
 	}
 }
 
-// ListenerRegistry manages store listeners
+// ListenerRegistry manages store change listeners
 type ListenerRegistry struct {
 	listeners map[interface{}]func()
 }
 
-// Add adds a listener with a key
+// Add adds a listener to the registry
 func (r *ListenerRegistry) Add(key interface{}, listener func()) {
-	if key == nil {
-		key = new(int)
-	}
 	r.listeners[key] = listener
 }
 
-// Remove removes a listener by key
+// Remove removes a listener from the registry
 func (r *ListenerRegistry) Remove(key interface{}) {
 	delete(r.listeners, key)
 }
 
-// Fire invokes all listeners
+// Fire invokes all registered listeners
 func (r *ListenerRegistry) Fire() {
 	for _, l := range r.listeners {
 		l()
@@ -80,7 +77,7 @@ func onAction(action interface{}) {
 		log.Printf("👤 Username set to: %s", Username)
 
 	case *actions.AddMessage:
-		Messages = append(Messages, shared.TextMessage{
+		Messages = append(Messages, api.WSChatMessage{
 			Text: a.Text,
 			From: a.From,
 		})
