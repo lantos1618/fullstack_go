@@ -1,105 +1,105 @@
-# Go Chat Application
+# Adding New Communications
 
-This project is a simple real-time chat application built using Go, WebAssembly, and WebSockets. It demonstrates a basic architecture for handling concurrent connections and message broadcasting.
+This guide explains how to add new communication endpoints for both REST API and WebSocket in the codebase.
 
-## Project Structure
+## Adding a New REST Endpoint
 
-The project is organized as follows:
+1. Define the Request/Response Types
+```go
+// In shared/api/types.go or a new type file
+type NewFeatureRequest struct {
+    // Add request fields
+    Field string `json:"field"`
+}
 
--   **`.air.toml`**: Configuration file for the `air` live-reloading tool.
--   **`scripts/build_wasm.sh`**: Shell script to build the WebAssembly (WASM) frontend.
--   **`main.go`**: The main server-side Go application.
--   **`frontend/main.go`**: The frontend Go application compiled to WASM.
--   **`.vscode/settings.json`**: VS Code settings for the project.
--   **`.gitignore`**: Specifies intentionally untracked files that Git should ignore.
--   **`frontend/index.html`**: The main HTML file for the frontend.
--   **`shared/types.go`**: Defines shared data structures used by both the server and the frontend.
--   **`dist/`**: Directory where the static frontend files are served from.
--   **`tmp/`**: Temporary directory used during the build process.
+type NewFeatureResponse struct {
+    // Add response fields
+    Result string `json:"result"`
+}
+```
 
-### Key Components
+2. Create a New Route
+```go
+// In shared/api/routes.go
+var NewFeatureRoute = http.NewRoute[NewFeatureRequest, NewFeatureResponse](
+    "/api/new-feature",
+    http.MethodPost,
+)
+```
 
--   **Server (`main.go`)**:
-    -   Sets up a WebSocket server using `gorilla/websocket`.
-    -   Uses `github.com/anthdm/hollywood` for actor-based concurrency.
-    -   Handles client connections and message routing.
-    -   Implements a `RoomActor` to broadcast messages to all connected clients.
-    -   Serves static files from the `dist` directory.
--   **Frontend (`frontend/main.go`)**:
-    -   Written in Go and compiled to WebAssembly.
-    -   Uses `github.com/hexops/vecty` for UI rendering.
-    -   Connects to the WebSocket server.
-    -   Displays incoming messages in a chat window.
-    -   Allows users to send messages.
--   **Shared (`shared/types.go`)**:
-    -   Defines common types like `WSMessage` and `TextMessage` for communication between the server and frontend.
+3. Implement the Handler (Server-side)
+```go
+// In your handler file
+func HandleNewFeature(req NewFeatureRequest) (NewFeatureResponse, error) {
+    // Implement your handler logic
+    return NewFeatureResponse{
+        Result: "processed",
+    }, nil
+}
+```
 
-## How to Run
+4. Add Client-side Implementation
+```go
+// In shared/http/client.go or your frontend code
+func CallNewFeature(req NewFeatureRequest) (NewFeatureResponse, error) {
+    return client.Do(NewFeatureRoute, req)
+}
+```
 
-1.  **Install Dependencies:**
-    -   Make sure you have Go installed (version 1.18 or later).
-    -   Install `air` for live reloading: `go install github.com/cosmtrek/air@latest`
-    -   Install `tailwindcss` for styling: `npm install -D tailwindcss`
-        -   Initialize Tailwind CSS: `npx tailwindcss init -p`
-2.  **Build the Frontend:**
-    -   Run the `scripts/build_wasm.sh` script:
-        ```bash
-        ./scripts/build_wasm.sh
-        ```
-    -   This will copy `wasm_exec.js` and build the `main.wasm` file in the `frontend/` directory.
-3.  **Build the Tailwind CSS:**
-    -   Create a `tailwind.config.js` file in the root directory with the following content:
-        ```javascript
-        /** @type {import('tailwindcss').Config} */
-        module.exports = {
-          content: [
-            "./frontend/index.html",
-            "./frontend/main.go",
-          ],
-          theme: {
-            extend: {},
-          },
-          plugins: [],
-        }
-        ```
-    -   Create a `frontend/input.css` file with the following content:
-        ```css
-        @tailwind base;
-        @tailwind components;
-        @tailwind utilities;
-        ```
-    -   Run the following command to build the CSS:
-        ```bash
-        npx tailwindcss -i ./frontend/input.css -o ./dist/output.css --watch
-        ```
-4.  **Start the Server:**
-    -   Run `air` from the project root:
-        ```bash
-        air
-        ```
-    -   This will start the Go server and watch for file changes, automatically rebuilding and restarting the server when needed.
-5.  **Open in Browser:**
-    -   Open your web browser and navigate to `http://localhost:8080`.
+## Adding a New WebSocket Message
 
-## Key Concepts
+1. Define the Message Type
+```go
+// In shared/ws/messages.go
+const (
+    // Add your new message type
+    TypeNewFeature MessageType = "NEW_FEATURE"
+)
+```
 
--   **WebSockets:** Used for bidirectional, real-time communication between the server and the browser.
--   **WebAssembly (WASM):** Allows running Go code in the browser.
--   **Actor Model:** Used for concurrency on the server-side, enabling efficient handling of multiple client connections.
--   **Live Reloading:** The `air` tool provides live reloading during development, making it easier to see changes in real-time.
--   **Tailwind CSS:** Used for styling the frontend.
+2. Create the Payload Structure
+```go
+// In shared/ws/messages.go
+type NewFeaturePayload struct {
+    // Define your payload fields
+    Data    string `json:"data"`
+    UserID  string `json:"user_id"`
+}
+```
 
-## Notes
+3. Handle the Message (Server-side)
+```go
+// In your handler (e.g., internal/actors/client.go)
+switch msg.Type {
+case ws.TypeNewFeature:
+    payload := msg.Payload.(NewFeaturePayload)
+    // Handle the new feature message
+}
+```
 
--   The `CheckOrigin` in the WebSocket upgrader is set to allow all origins for simplicity. In a production environment, you should configure this to only allow specific origins.
--   The frontend is very basic and can be extended with more features.
--   The `RoomActor` currently broadcasts all messages to all clients. You could implement more sophisticated routing or user-specific messaging.
--   The `main.go` file uses the `log` package from `github.com/charmbracelet/log` for structured logging.
+4. Send Messages (Client-side)
+```go
+// In your frontend code
+connection.Send(ws.Message{
+    Type: ws.TypeNewFeature,
+    Payload: NewFeaturePayload{
+        Data: "example",
+        UserID: "user123",
+    },
+})
+```
 
-## Contributing
+## Best Practices
 
-Feel free to contribute to this project by submitting pull requests or opening issues.
+1. **Type Safety**: Always use strongly typed structures for both REST and WebSocket communications.
+2. **Documentation**: Add comments explaining the purpose of new message types and payloads.
+3. **Validation**: Implement proper validation for all incoming data.
+4. **Error Handling**: Define appropriate error responses and handle them gracefully.
+5. **Testing**: Add tests for new endpoints and message handlers.
 
-## License
+## Common Patterns
 
-This project is licensed under the MIT License.
+- REST endpoints use the `Route[Req, Res]` generic type for type safety
+- WebSocket messages follow the `Message` structure with specific payload types
+- All WebSocket message types are defined as constants
+- Each message type has its own payload structure
