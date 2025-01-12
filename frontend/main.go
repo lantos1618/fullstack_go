@@ -89,7 +89,13 @@ func (a *App) Render() vecty.ComponentOrHTML {
 				),
 				vecty.Text("Chat App Test"),
 			),
-			&components.DarkModeToggle{},
+			elem.Div(
+				vecty.Markup(
+					vecty.Class("flex", "items-center", "space-x-4"),
+				),
+				&components.HealthStatus{},
+				&components.DarkModeToggle{},
+			),
 		),
 		content,
 	)

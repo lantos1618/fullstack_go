@@ -15,6 +15,27 @@ const (
 	TypeTyping  WsMessageType = "TYPING"
 )
 
+// Route represents an API route with its associated request and response types
+type Route[Req any, Res any] struct {
+	Path   string
+	Method string
+}
+
+// NewRoute creates a new route with the given path and method
+func NewRoute[Req any, Res any](path, method string) Route[Req, Res] {
+	return Route[Req, Res]{
+		Path:   path,
+		Method: method,
+	}
+}
+
+// API Routes
+var (
+	// RouteHealth represents the health check endpoint
+	// It takes no request body (struct{}) and returns HealthResponse
+	RouteHealth = NewRoute[struct{}, HealthResponse]("/api/health", "GET")
+)
+
 // WSMessage represents a WebSocket message structure
 type WSMessage struct {
 	Type    WsMessageType `json:"type"`
@@ -45,4 +66,10 @@ type JoinMessage struct {
 // LeaveMessage represents a leave message
 type LeaveMessage struct {
 	From string `json:"from"`
+}
+
+// HealthResponse represents the health check response
+type HealthResponse struct {
+	Status    string `json:"status"`
+	Timestamp int64  `json:"timestamp"`
 }

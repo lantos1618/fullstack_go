@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-chat/shared"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/anthdm/hollywood/actor"
 	"github.com/charmbracelet/log"
@@ -171,6 +173,21 @@ func main() {
 
 	// dist
 	http.Handle("/", http.FileServer(http.Dir("./dist")))
+
+	// Health check endpoint
+	http.HandleFunc(shared.RouteHealth.Path, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != shared.RouteHealth.Method {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := shared.HealthResponse{
+			Status:    "ok",
+			Timestamp: time.Now().Unix(),
+		}
+		json.NewEncoder(w).Encode(response)
+	})
 
 	http.ListenAndServe(":8080", nil)
 	log.Info("Server started on port 8080")
